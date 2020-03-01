@@ -1,0 +1,32 @@
+#!/bin/bash
+IP=$(which ip)
+IPTABLES=$(which iptables)
+
+PLUTO_MARK_OUT_ARR=(${PLUTO_MARK_OUT//// })
+PLUTO_MARK_IN_ARR=(${PLUTO_MARK_IN//// })
+
+case "$PLUTO_CONNECTION" in
+{% for peer_name, peer in strongswan_config_peers.items() %}
+  {{ peer_name }})
+    VTI_INTERFACE={{ peer.vti_name }}
+    VTI_INTERFACE_MTU={{ peer.vti_mtu | default ('1438') }}
+    VTI_LOCALADDR={{ peer.right_inside_ip }}
+    VTI_CIDR={{ peer.network_cidr }}
+    VTI_REMOTEADDR={{ peer.left_inside_ip }}
+    ;;
+{% endfor %}
+esac
+
+case "${PLUTO_VERB}" in
+    up-client)
+        $IP link add ${VTI_INTERFACE} type vti local ${PLUTO_ME} remote ${PLUTO_PEER} okey ${PLUTO_MARK_OUT_ARR[0]} ikey ${PLUTO_MARK_IN_ARR[0]}
+        $IP addr add ${VTI_LOCALADDR}/${VTI_CIDR} dev ${VTI_INTERFACE}
+        $IP link set ${VTI_INTERFACE} up mtu ${VTI_INTERFACE_MTU}
+        $IPTABLES -t mangle -I FORWARD -o ${VTI_INTERFACE} -p tcp -m tcp --tcp-flags SYN,RST SYN -j TCPMSS --clamp-mss-to-pmtu
+        $IP route flush table 220
+        ;;
+    down-client)
+        $IP link del ${VTI_INTERFACE}
+        $IPTABLES -t mangle -D FORWARD -o ${VTI_INTERFACE} -p tcp -m tcp --tcp-flags SYN,RST SYN -j TCPMSS --clamp-mss-to-pmtu
+        ;;
+esac

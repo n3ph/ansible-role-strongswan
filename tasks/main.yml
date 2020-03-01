@@ -1,0 +1,38 @@
+---
+
+#------------------------------------------------------------------------------#
+# EPEL repository and package
+#------------------------------------------------------------------------------#
+
+- import_tasks: yum.yml
+
+#------------------------------------------------------------------------------#
+# create all required directories
+#------------------------------------------------------------------------------#
+
+- name: create required directories
+  file:
+    path: "{{ item }}"
+    state: directory
+  loop:
+    - "{{ strongswan_config_dir }}"
+    - "{{ strongswan_config_dir }}/charon"
+
+
+#------------------------------------------------------------------------------#
+# generate keys and configuration
+#------------------------------------------------------------------------------#
+
+- import_tasks: config.yml
+
+#------------------------------------------------------------------------------#
+# enable and start strongswan
+#------------------------------------------------------------------------------#
+
+- name: systemd | enable and start strongswan
+  systemd:
+    name: strongswan
+    state: started
+    enabled: true
+  tags: systemd
+  when: ansible_virtualization_type != "docker"

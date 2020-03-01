@@ -1,0 +1,20 @@
+# {{ ansible_managed }}
+
+config setup
+  {{ strongswan_config_setup | indent(2) }}
+
+conn %default
+  {{ strongswan_config_default | indent(2) }}
+
+{% for peer_name, peer in strongswan_config_peers.items() %}
+conn {{ peer_name }}
+  left={{ peer.left_outside_ip }}
+  right={{ peer.right_outside_ip }}
+{% if peer.ike is defined and peer.ike is string %}
+  ike={{ peer.ike }}
+{% endif %}
+{% if peer.esp is defined and peer.esp is string %}
+  esp={{ peer.esp }}
+{% endif %}
+
+{% endfor %}

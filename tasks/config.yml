@@ -1,0 +1,58 @@
+---
+
+- tags: config
+  block:
+
+    #------------------------------------------------------------------------------#
+    # configure charon
+    #------------------------------------------------------------------------------#
+
+    - name: config | configure charon
+      template:
+        src: charon.conf.j2
+        dest: "{{ strongswan_config_dir }}/charon.conf"
+      notify: systemd | restart strongswan
+
+    - name: config | kernel-link plugin
+      template:
+        src: kernel-netlink.conf.j2
+        dest: "{{ strongswan_config_dir }}/charon/kernel-netlink.conf"
+      notify: systemd | restart strongswan
+
+    - name: config | disable FARP plugin
+      lineinfile:
+        path: "{{ strongswan_config_dir }}/strongswan.d/charon/farp.conf"
+        line: '    load = no'
+        regexp: '^    load = *'
+      notify: systemd | restart strongswan
+
+    #------------------------------------------------------------------------------#
+    # configure encryption method
+    #------------------------------------------------------------------------------#
+
+    - name: config | configure encryption method
+      template:
+        src: ipsec.secrets.j2
+        dest: "{{ strongswan_config_dir }}/ipsec.secrets"
+      notify: systemd | restart strongswan
+
+    #------------------------------------------------------------------------------#
+    # Deploy ipsec config
+    #------------------------------------------------------------------------------#
+
+    - name: config | deploy ipsec config
+      template:
+        src: ipsec.conf.j2
+        dest: "{{ strongswan_config_dir }}/ipsec.conf"
+      notify: systemd | restart strongswan
+
+    #------------------------------------------------------------------------------#
+    # Deploy vti config
+    #------------------------------------------------------------------------------#
+
+    - name: config | deploy vti config
+      template:
+        src: ipsec-vti.sh.j2
+        dest: "{{ strongswan_config_dir }}/ipsec-vti.sh"
+        mode: 0750
+      notify: systemd | restart strongswan

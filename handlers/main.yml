@@ -1,0 +1,7 @@
+---
+
+- name: systemd | restart strongswan
+  systemd:
+    name: strongswan
+    state: restarted
+  when: ansible_virtualization_type != "docker"
